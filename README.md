@@ -1,73 +1,48 @@
-<p align="center">
-  <a href="http://nestjs.com/" target="blank"><img src="https://nestjs.com/img/logo-small.svg" width="200" alt="Nest Logo" /></a>
-</p>
+# Mar'i Backend
 
-[circleci-image]: https://img.shields.io/circleci/build/github/nestjs/nest/master?token=abc123def456
-[circleci-url]: https://circleci.com/gh/nestjs/nest
+Backend service for **I-Tube** or **Mar'i**, a simplified YouTube-style media platform.  
+This backend provides the foundation for user management, authentication, channels, video handling, and supporting services.
 
-  <p align="center">A progressive <a href="http://nodejs.org" target="_blank">Node.js</a> framework for building efficient and scalable server-side applications.</p>
-    <p align="center">
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/v/@nestjs/core.svg" alt="NPM Version" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/l/@nestjs/core.svg" alt="Package License" /></a>
-<a href="https://www.npmjs.com/~nestjscore" target="_blank"><img src="https://img.shields.io/npm/dm/@nestjs/common.svg" alt="NPM Downloads" /></a>
-<a href="https://circleci.com/gh/nestjs/nest" target="_blank"><img src="https://img.shields.io/circleci/build/github/nestjs/nest/master" alt="CircleCI" /></a>
-<a href="https://coveralls.io/github/nestjs/nest?branch=master" target="_blank"><img src="https://coveralls.io/repos/github/nestjs/nest/badge.svg?branch=master#9" alt="Coverage" /></a>
-<a href="https://discord.gg/G7Qnnhy" target="_blank"><img src="https://img.shields.io/badge/discord-online-brightgreen.svg" alt="Discord"/></a>
-<a href="https://opencollective.com/nest#backer" target="_blank"><img src="https://opencollective.com/nest/backers/badge.svg" alt="Backers on Open Collective" /></a>
-<a href="https://opencollective.com/nest#sponsor" target="_blank"><img src="https://opencollective.com/nest/sponsors/badge.svg" alt="Sponsors on Open Collective" /></a>
-  <a href="https://paypal.me/kamilmysliwiec" target="_blank"><img src="https://img.shields.io/badge/Donate-PayPal-ff3f59.svg"/></a>
-    <a href="https://opencollective.com/nest#sponsor"  target="_blank"><img src="https://img.shields.io/badge/Support%20us-Open%20Collective-41B883.svg" alt="Support us"></a>
-  <a href="https://twitter.com/nestframework" target="_blank"><img src="https://img.shields.io/twitter/follow/nestframework.svg?style=social&label=Follow"></a>
-</p>
-  <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
-  [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
+---
 
-## Description
+## 📌 Overview
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+The I-Tube backend is built using **NestJS** with a clean modular structure.  
+It integrates with PostgreSQL and Redis and is designed to support secure authentication, media processing, and scalable functionality.
 
-## Installation
+This repository contains only the backend service.  
+Frontend implementation will be handled separately.
 
-```bash
-$ npm install
-```
+---
+## 🚀 Tech Stack
 
-## Running the app
+- **NestJS** (Node.js framework)  
+- **TypeScript**  
+- **PostgreSQL**  
+- **Redis**  
+- **Firebase**
 
-```bash
-# development
-$ npm run start
+---
+## 🧩 Current Milestone
 
-# watch mode
-$ npm run start:dev
+### **Milestone 1 — User Management & Authentication**
 
-# production mode
-$ npm run start:prod
-```
+- Support user account creation using OTP-based signup
 
-## Test
+- Support OAuth login via Firebase (Google, etc.)
 
-```bash
-# unit tests
-$ npm run test
+- Automatically link accounts when OAuth email matches existing user email
 
-# e2e tests
-$ npm run test:e2e
+- Support multi-device login via session records
 
-# test coverage
-$ npm run test:cov
-```
+- Issue and rotate JWT access & refresh tokens
 
-## Support
+- Implement refresh token rotation and Redis-based blacklist
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+- Support logout from current device
 
-## Stay in touch
+- Support logout from all devices
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
+- Support password reset using OTP
 
-## License
-
-Nest is [MIT licensed](LICENSE).
+- Manage OTPs, cooldowns, and failed attempts using Redis
