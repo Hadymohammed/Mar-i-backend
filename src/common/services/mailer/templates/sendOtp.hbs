@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@200;300;400;500;600">
+  <style>
+    body {
+      font-family: 'IBM Plex Sans Arabic', sans-serif;
+      line-height: 1.7;
+      direction: rtl;
+      text-align: right;
+      margin: 20px;
+      background-color: #f4f7fb;
+    }
+
+    .container {
+      background-color: #ffffff;
+      padding: 24px;
+      border-radius: 8px;
+      border: 1px solid #d4ddee;
+      max-width: 600px;
+      margin: auto;
+      box-shadow: 0 2px 6px rgba(0, 45, 90, 0.08);
+      
+    }
+
+    .header {
+      font-size: 22px;
+      font-weight: 600;
+      color: #1e4fa4;
+      margin-bottom: 16px;
+      text-align: right;
+    }
+
+    .greeting {
+      font-size: 16px;
+      color: #444;
+      margin-bottom: 10px;
+      text-align: right;
+    }
+
+    .otp-box {
+      margin: 20px 0;
+      padding: 20px;
+      text-align: center;
+      background: #eaf1ff;
+      border: 1px solid #c2d3ff;
+      border-radius: 6px;
+    }
+
+    .otp-code {
+      font-size: 32px;
+      font-weight: bold;
+      letter-spacing: 4px;
+      color: #1e4fa4;
+    }
+
+    .note {
+      font-size: 14px;
+      color: #666;
+      margin-top: 10px;
+      text-align: center;
+    }
+
+    .footer {
+      margin-top: 20px;
+      font-size: 12px;
+      color: #777;
+      border-top: 1px solid #ddd;
+      padding-top: 12px;
+      text-align: center;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="container">
+
+    <p class="header">مرحباً <span style="color:#1e4fa4;">{{ name }}</span></p>
+
+    <p class="greeting">
+      هذا هو رمز التحقق الخاص بك لتأكيد هويتك على <strong>مرئي</strong>.
+    </p>
+
+    <div class="otp-box">
+      <div class="otp-code">{{ otp }}</div>
+      <div class="note">صالح لمدة 5 دقائق فقط.</div>
+    </div>
+
+    <p class="greeting">
+      إذا لم تطلب هذا الرمز، يمكنك تجاهل هذه الرسالة بأمان.
+    </p>
+
+  </div>
+
+  <div class="footer">
+    <p>مع تحيات فريق مرئي</p>
+  </div>
+</body>
+</html>

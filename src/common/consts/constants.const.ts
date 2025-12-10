@@ -1,0 +1,1 @@
+export const OTP_MAX_RESENDS = 3;

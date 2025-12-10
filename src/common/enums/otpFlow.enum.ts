@@ -1,0 +1,4 @@
+export enum OtpFlow {
+    REGISTRATION = 'REGISTRATION',
+    PASSWORD_RESET = 'PASSWORD_RESET',
+}
