@@ -22,8 +22,8 @@ export class CreateUserDto {
     email: string;
 
     @IsString()
-    @MinLength(8)
-    @MaxLength(20)
+    @MinLength(8, { message: 'Password is too short. Minimum length is $constraint1 characters' })
+    @MaxLength(20 , { message: 'Password is too long. Maximum length is $constraint1 characters' })
     // At least one letter, one special character and one number
     @Matches(/^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,}$/, {
         message: 'Password must contain at least one letter, one number and one special character',

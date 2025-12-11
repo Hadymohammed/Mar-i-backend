@@ -1,10 +1,11 @@
-import { BadRequestException, Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/createUser.dto';
 import { ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VerifyOtpDto } from './dtos/verifyOtp.dto';
-import { Result } from 'src/common/types/result.type';
 import { OtpGeneratingResultDto } from './dtos/otpGeneratingResult.dto';
+import { LoginRequestDto } from './dtos/loginRequest.dto';
+import { Request } from 'express';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -29,6 +30,13 @@ export class AuthController {
   @ApiResponse({ status: 200, description: 'OTP verified successfully.' })
   async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto): Promise<any> {
     const data = await this.authService.verifyOtp(verifyOtpDto);
+    return data;
+  }
+
+  @Post('login')
+  @ApiResponse({ status: 200, description: 'User logged in successfully.' })
+  async login(@Body() loginRequestDto: LoginRequestDto, @Req() request: Request): Promise<any> {
+    const data = await this.authService.login(loginRequestDto, request);
     return data;
   }
 }

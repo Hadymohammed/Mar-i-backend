@@ -1,4 +1,4 @@
-import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, HttpException, HttpStatus, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { CreateUserDto } from '../users/dtos/createUser.dto';
 import { OtpService } from 'src/common/services/otp/otp.service';
@@ -7,6 +7,12 @@ import { MailService } from 'src/common/services/mailer/mail.service';
 import { VerifyOtpDto } from './dtos/verifyOtp.dto';
 import { OtpGeneratingResultDto } from './dtos/otpGeneratingResult.dto';
 import { IOtpGeneratingResult } from 'src/common/services/otp/interfaces/IOtpGeneratingResult';
+import { LoginRequestDto } from './dtos/loginRequest.dto';
+import * as bcrypt from 'bcrypt';
+import { JwtService } from 'src/common/services/jwt/jwt.service';
+import { SessionsService } from '../sessions/sessions.service';
+import { Request } from 'express';
+import { AuthDataDto } from './dtos/authData.dto';
 
 @Injectable()
 export class AuthService {
@@ -14,6 +20,8 @@ export class AuthService {
         private usersService: UsersService,
         private otpService: OtpService,
         private mailerService: MailService,
+        private jwtService: JwtService,
+        private sessionService: SessionsService,
     ) { }
 
     async RegisterUser(userDto: CreateUserDto): Promise<number> {
@@ -85,5 +93,52 @@ export class AuthService {
         }
     }
 
+    async login(loginRequestDto: LoginRequestDto,request: Request): Promise<AuthDataDto> {
+        const { email, password } = loginRequestDto;
+        const user = await this.usersService.isUserExists(email);
+
+        if (!user) {
+            throw new NotFoundException('User not found');
+        }
+        
+        const isPasswordValid = bcrypt.compareSync(password, user.password_hash);
+
+        if (!isPasswordValid) {
+            throw new UnauthorizedException('Invalid password');
+        }
+
+        if (!user.email_verified) {
+            throw new UnauthorizedException('Email not verified');
+        }
+
+        const tokens = await this.createTokens(user.id.toString(), user.email);
+
+        const session = await this.sessionService
+        .createSession(request, user, tokens.refreshToken.token, tokens.refreshToken.expiresIn);
+
+        return {
+            accessToken: tokens.accessToken.token,
+            refreshToken: tokens.refreshToken.token ,
+            refreshTokenExpiry: tokens.refreshTokenExpiry,
+            accessTokenExpiry: tokens.accessTokenExpiry,
+            email: user.email,
+            userId: user.id,
+            sessionId: session.id
+        };
+    }
+
+    private async createTokens(userId: string, email: string) {
+        const accessToken = await this.jwtService.createAccessToken(userId, email);
+        const refreshToken = await this.jwtService.createRefreshToken(userId, email);
+
+        return {
+            accessToken,
+            refreshToken,
+            refreshTokenExpiry: new Date(Date.now() + refreshToken.expiresIn * 1000),
+            accessTokenExpiry: new Date(Date.now() + accessToken.expiresIn * 1000),
+            email: email,
+            userId: userId
+        };
+    }
 
 }
