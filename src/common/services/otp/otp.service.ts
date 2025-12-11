@@ -1,9 +1,10 @@
 import * as bcrypt from 'bcrypt';
-import { OtpFlow } from '../enums/otpFlow.enum';
-import { RedisService } from './redis.service';
-import { OtpRedisKeys } from '../consts/otpRedisKeys.const';
-import { OTP_MAX_RESENDS } from '../consts/constants.const';
+import { OtpFlow } from '../../enums/otpFlow.enum';
+import { RedisService } from '../redis.service';
+import { OtpRedisKeys } from '../../consts/otpRedisKeys.const';
+import { OTP_MAX_RESENDS } from '../../consts/constants.const';
 import { Injectable } from '@nestjs/common';
+import { IOtpGeneratingResult } from './interfaces/IOtpGeneratingResult';
 
 @Injectable()
 export class OtpService {
@@ -25,7 +26,7 @@ export class OtpService {
         };
     }
 
-    async createOtp(email: string, otpFlow: OtpFlow): Promise<string> {
+    async createOtp(email: string): Promise<IOtpGeneratingResult> {
         // OTP Constraints
         // 5 minutes validity
         // 30 seconds cooldown between requests
@@ -47,7 +48,7 @@ export class OtpService {
         }
         const resends = (await this.redisClient.GET(OtpRedisKeys.resends(email))) as string;
 
-        if (parseInt(resends) >= OTP_MAX_RESENDS) {
+        if (parseInt(resends) > OTP_MAX_RESENDS) {
             await this.redisClient.SET(OtpRedisKeys.blocked(email), '1', { EX: 300 }); // Block for 5 minutes
             throw new Error('Maximum OTP resends reached.');
         }
@@ -57,6 +58,26 @@ export class OtpService {
         await this.redisClient.INCR(OtpRedisKeys.resends(email));
         await this.redisClient.EXPIRE(OtpRedisKeys.resends(email), 300);
 
-        return otp.value;
+        return {
+            value: otp.value,
+            availableResends: OTP_MAX_RESENDS - (parseInt(resends) || 0),
+        };
+    }
+
+    async verifyOtp(email: string, otp: string): Promise<boolean> {
+        const storedHashedOtp = await this.redisClient.GET(OtpRedisKeys.value(email));
+        if (!storedHashedOtp) {
+            return false; // OTP expired or does not exist
+        }
+
+        const isMatch = await bcrypt.compare(otp, storedHashedOtp);
+        if (isMatch) {
+            // OTP is valid, delete it from Redis
+            await this.redisClient.DEL(OtpRedisKeys.value(email));
+            await this.redisClient.DEL(OtpRedisKeys.resends(email));
+            return true;
+        } else {
+            return false; // OTP does not match
+        }
     }
 }

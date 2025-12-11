@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import { RedisService } from './services/redis.service';
-import { OtpService } from './services/otp.service';
+import { OtpService } from './services/otp/otp.service';
 import { MailService } from './services/mailer/mail.service';
 
 @Module({

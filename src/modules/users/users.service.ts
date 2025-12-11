@@ -44,4 +44,13 @@ export class UsersService {
             return this.userRepo.save(newUser);
         }
     }
+
+    async updateUserEmailVerification(email: string): Promise<User> {
+        const user = await this.isUserExists(email);
+        if (!user) {
+            throw new HttpException('User not found', HttpStatus.NOT_FOUND);
+        }
+        user.email_verified = true;
+        return this.userRepo.save(user);
+    }
 }
