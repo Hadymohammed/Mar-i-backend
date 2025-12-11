@@ -2,6 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { setupSwagger } from './common/plugins/swagger.plugin';
+import { ResponseInterceptor } from './common/interceptors/respons.interceptor';
+import { GlobalExceptionFilter } from './common/filters/httpExeptionsFilter.filter';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -13,6 +15,12 @@ async function bootstrap() {
       transform: true,
     }),
   );
+
+  // Response Interceptor
+  app.useGlobalInterceptors(new ResponseInterceptor());
+
+  // Global Exception Filter
+  app.useGlobalFilters(new GlobalExceptionFilter());
 
   // Enable CORS
   app.enableCors();
