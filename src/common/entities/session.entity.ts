@@ -13,7 +13,7 @@ export class Session {
   refresh_token_hash: string;
 
   @Column({ nullable: true })
-  user_agent: string;
+  location: string;
 
   @Column({ type: 'inet', nullable: true })
   ip_address: string;
