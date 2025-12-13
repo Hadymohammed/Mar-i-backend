@@ -111,11 +111,17 @@ export class AuthService {
             throw new UnauthorizedException('Email not verified');
         }
 
-        const tokens = await this.createTokens(user.id.toString(), user.email);
-
         const session = await this.sessionService
-        .createSession(request, user, tokens.refreshToken.token, tokens.refreshToken.expiresIn);
+        .createSession(request, user, "temp", 0); // temp token and 0 expiry for now
+        
+        const tokens = await this.createTokens(user.id.toString(), user.email, session.id);
 
+        await this.sessionService.updateSessionRefreshToken(
+            session.id,
+            tokens.refreshToken.token,
+            tokens.refreshToken.expiresIn
+        );
+        
         return {
             accessToken: tokens.accessToken.token,
             refreshToken: tokens.refreshToken.token ,
@@ -127,9 +133,9 @@ export class AuthService {
         };
     }
 
-    private async createTokens(userId: string, email: string) {
-        const accessToken = await this.jwtService.createAccessToken(userId, email);
-        const refreshToken = await this.jwtService.createRefreshToken(userId, email);
+    private async createTokens(userId: string, email: string, sessionId: string) {
+        const accessToken = await this.jwtService.createAccessToken(userId, email, sessionId);
+        const refreshToken = await this.jwtService.createRefreshToken(userId, email, sessionId);
 
         return {
             accessToken,

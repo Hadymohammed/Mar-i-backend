@@ -47,11 +47,12 @@ export class JwtService {
    * @param email - The user's email address
    * @returns A signed JWT access token
    */
-  async createAccessToken(userId: string, email: string): Promise<IJwtGeneratingResult> {
+  async createAccessToken(userId: string, email: string, sessionId: string): Promise<IJwtGeneratingResult> {
     const payload = {
       sub: userId,
       email,
       type: 'access',
+      sessionId
     };
 
     const options: SignOptions = {
@@ -78,11 +79,12 @@ export class JwtService {
    * @param email - The user's email address
    * @returns A signed JWT refresh token
    */
-  async createRefreshToken(userId: string, email: string): Promise<IJwtGeneratingResult> {
+  async createRefreshToken(userId: string, email: string, sessionId: string): Promise<IJwtGeneratingResult> {
     const payload = {
         sub: userId,
         email,
         type: 'refresh',
+        sessionId
     };
     const options: SignOptions = {
         expiresIn: this._refreshExpiresIn,

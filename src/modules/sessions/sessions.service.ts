@@ -80,6 +80,20 @@ export class SessionsService {
         return this.sessionsRepository.save(session);
     }
 
+    async updateSessionRefreshToken(sessionId: string, newRefreshToken: string, newExpiresIn: number): Promise<void> {
+        const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
+        if (!session) {
+            throw new Error('Session not found');
+        }
+
+        // Hash the new refresh token
+        const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
+        session.refresh_token_hash = newRefreshTokenHash;
+        session.expires_at = new Date(Date.now() + newExpiresIn * 1000);
+
+        await this.sessionsRepository.save(session);
+    }
+
     /**
      * Get all active sessions for a user
      * @param userId - The user ID
