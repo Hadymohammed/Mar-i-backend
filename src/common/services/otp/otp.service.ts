@@ -1,7 +1,7 @@
 import * as bcrypt from 'bcrypt';
 import { OtpFlow } from '../../enums/otpFlow.enum';
 import { RedisService } from '../redis.service';
-import { OtpRedisKeys } from '../../consts/otpRedisKeys.const';
+import { OtpRedisKeys } from '../../consts/redisKeys';
 import { OTP_MAX_RESENDS } from '../../consts/constants.const';
 import { Injectable } from '@nestjs/common';
 import { IOtpGeneratingResult } from './interfaces/IOtpGeneratingResult';

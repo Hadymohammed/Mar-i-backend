@@ -3,6 +3,9 @@ import { ConfigService } from '@nestjs/config';
 import { JwtPayload } from './interfaces/IJwtPayload';
 import { sign, SignOptions, verify } from 'jsonwebtoken';
 import { IJwtGeneratingResult } from './interfaces/IJwtGeneratingResult';
+import { RedisService } from '../redis.service';
+import { v4 as uuidv4 } from 'uuid';
+import { TokensBlacklistRedisKey } from 'src/common/consts/redisKeys';
 const ms = require('ms');
 
 
@@ -15,9 +18,10 @@ export interface TokenPair {
 export class JwtService {
   constructor(
     private readonly configService: ConfigService,
+    private readonly redisService: RedisService
   ) {}
 
-  private get _secret (): string {
+  private get _accessSecret (): string {
     return this.configService.get<string>('JWT_ACCESS_SECRET');
   }
 
@@ -42,6 +46,14 @@ export class JwtService {
   }
 
   /**
+   * Create a unique identifier for the JWT
+   * @returns A unique JWT ID
+   */
+  private createJwtId(): string {
+    return uuidv4();
+  }
+
+  /**
    * Create an access token for a user
    * @param userId - The user's unique identifier
    * @param email - The user's email address
@@ -49,6 +61,7 @@ export class JwtService {
    */
   async createAccessToken(userId: string, email: string, sessionId: string): Promise<IJwtGeneratingResult> {
     const payload = {
+      jti:  this.createJwtId(),
       sub: userId,
       email,
       type: 'access',
@@ -61,7 +74,7 @@ export class JwtService {
 
 
     return new Promise((resolve, reject) => {
-        sign(payload, this._secret, options, (err, token) => {
+        sign(payload, this._accessSecret, options, (err, token) => {
             if (err) {
             return reject(err);
             }
@@ -81,6 +94,7 @@ export class JwtService {
    */
   async createRefreshToken(userId: string, email: string, sessionId: string): Promise<IJwtGeneratingResult> {
     const payload = {
+        jti:  this.createJwtId(),
         sub: userId,
         email,
         type: 'refresh',
@@ -107,7 +121,44 @@ export class JwtService {
    * @param token - The JWT token to decode
    * @returns The decoded token payload
    */
-    decodeToken(token: string): JwtPayload {
-        return verify(token, this._secret) as JwtPayload;
+    decodeToken(token: string, type: 'access' | 'refresh'): JwtPayload {
+        const secret = type === 'access' ? this._accessSecret : this._refreshSecret;
+        return verify(token, secret) as JwtPayload;
+    }
+
+    /**
+     * Check if a token is valid and not revoked
+     * @param token - The JWT token to check
+     * @returns The token payload if valid, otherwise null
+     */
+    async isTokenValid(token: string, type: 'access' | 'refresh'): Promise<JwtPayload> {
+      try {
+        const payload = this.decodeToken(token, type);
+        const jti = payload.jti;
+        
+        const redisKey = type === 'access' ? TokensBlacklistRedisKey.accessToken(jti) : TokensBlacklistRedisKey.refreshToken(jti);
+        const isRevoked = await this.redisService.get(redisKey);
+        return isRevoked ? null : payload;
+      } catch (error) {
+        return null;
+      }
+    }
+
+    /**
+     * Revoke a refresh token by storing its jti in Redis with expiration
+     * @param jti - The JWT ID of the token to revoke
+     * @param expiresIn - Expiration time in seconds
+     */
+    async revokeRefreshToken(jti: string, expiresIn: number): Promise<void> {
+        await this.redisService.set(TokensBlacklistRedisKey.refreshToken(jti), 'revoked', expiresIn);
+    }
+
+    /**
+     * Revoke an access token by storing its jti in Redis with expiration
+     * @param jti - The JWT ID of the token to revoke
+     * @param expiresIn - Expiration time in seconds
+     */
+    async revokeAccessToken(jti: string, expiresIn: number): Promise<void> {
+        await this.redisService.set(TokensBlacklistRedisKey.accessToken(jti), 'revoked', expiresIn);
     }
 }

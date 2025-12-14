@@ -5,3 +5,8 @@ export const OtpRedisKeys = {
     coolDown : (email: string) => `otp:${email}:cooldown`,
     blocked : (email: string) => `otp:${email}:blocked`,
 };
+
+export const TokensBlacklistRedisKey = {
+    refreshToken: (jti: string) => `tokens_blacklist:refresh_token:${jti}`,
+    accessToken: (jti: string) => `tokens_blacklist:access_token:${jti}`,
+}

@@ -15,10 +15,11 @@ import { GeolocationService } from './services/geolocation/geolocation.service';
         GeolocationService,
     ],
     exports: [
+        RedisService,
         OtpService,
         MailService,
         JwtService,
         GeolocationService,
-    ]
+    ],
 })
 export class CommonModule {}
