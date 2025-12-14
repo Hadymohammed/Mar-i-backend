@@ -11,7 +11,7 @@ import { LoginRequestDto } from './dtos/loginRequest.dto';
 import * as bcrypt from 'bcrypt';
 import { JwtService } from 'src/common/services/jwt/jwt.service';
 import { SessionsService } from '../sessions/sessions.service';
-import { Request } from 'express';
+import e, { Request } from 'express';
 import { AuthDataDto } from './dtos/authData.dto';
 
 @Injectable()
@@ -22,7 +22,7 @@ export class AuthService {
         private mailerService: MailService,
         private jwtService: JwtService,
         private sessionService: SessionsService,
-    ) { }
+     ) { }
 
     async RegisterUser(userDto: CreateUserDto): Promise<number> {
         const user = await this.usersService.createUser(userDto);
@@ -133,6 +133,47 @@ export class AuthService {
         };
     }
 
+    async refreshToken(refreshToken: string): Promise<AuthDataDto> {
+        const payload = await this.jwtService.isTokenValid(refreshToken, 'refresh');
+
+        if (!payload) {
+            throw new UnauthorizedException('Invalid refresh token');
+        }
+
+        const sessionId = payload.sessionId;
+
+        const session = await this.sessionService.getSessionById(sessionId);
+
+        if (!session) {
+            throw new UnauthorizedException('Session not found');
+        } else if (session.expires_at < new Date()) {
+            throw new UnauthorizedException('Session has expired');
+        }
+        
+        const tokens = await this.createTokens(payload.sub, payload.email, sessionId);
+
+        await this.sessionService.updateSessionRefreshToken(
+            sessionId,
+            tokens.refreshToken.token,
+            tokens.refreshToken.expiresIn
+        );
+
+        // block old refresh token
+        // exp = 1766231820 (epoch time in seconds)
+        const exp = payload.exp - Math.floor(Date.now() / 1000);
+        await this.jwtService.revokeRefreshToken(payload.jti, exp);
+
+        
+        return {
+            accessToken: tokens.accessToken.token,
+            refreshToken: tokens.refreshToken.token ,
+            refreshTokenExpiry: tokens.refreshTokenExpiry,
+            accessTokenExpiry: tokens.accessTokenExpiry,
+            email: payload.email,
+            userId: payload.sub,
+            sessionId: sessionId
+        };
+    }
     private async createTokens(userId: string, email: string, sessionId: string) {
         const accessToken = await this.jwtService.createAccessToken(userId, email, sessionId);
         const refreshToken = await this.jwtService.createRefreshToken(userId, email, sessionId);

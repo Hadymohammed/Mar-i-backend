@@ -6,6 +6,7 @@ import { VerifyOtpDto } from './dtos/verifyOtp.dto';
 import { OtpGeneratingResultDto } from './dtos/otpGeneratingResult.dto';
 import { LoginRequestDto } from './dtos/loginRequest.dto';
 import { Request } from 'express';
+import { AuthDataDto } from './dtos/authData.dto';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -35,8 +36,15 @@ export class AuthController {
 
   @Post('login')
   @ApiResponse({ status: 200, description: 'User logged in successfully.' })
-  async login(@Body() loginRequestDto: LoginRequestDto, @Req() request: Request): Promise<any> {
+  async login(@Body() loginRequestDto: LoginRequestDto, @Req() request: Request): Promise<AuthDataDto> {
     const data = await this.authService.login(loginRequestDto, request);
+    return data;
+  }
+
+  @Post('refresh-token')
+  @ApiResponse({ status: 200, description: 'Token refreshed successfully.' })
+  async refreshToken(@Query('refreshToken') refreshToken: string): Promise<AuthDataDto> {
+    const data = await this.authService.refreshToken(refreshToken);
     return data;
   }
 }
