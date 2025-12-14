@@ -1,4 +1,4 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, CreateDateColumn, JoinColumn } from 'typeorm';
 import { User } from './user.entity';
 
 @Entity('sessions')
@@ -6,7 +6,11 @@ export class Session {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column()
+  user_id: string;
+
   @ManyToOne(() => User, user => user.sessions, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'user_id' })
   user: User;
 
   @Column()
@@ -27,7 +31,10 @@ export class Session {
   @Column({ type: 'timestamp' })
   expires_at: Date;
 
+  @Column({ default: false })
+  revoked: boolean;
+
   is_valid(): boolean {
-    return new Date() < this.expires_at;
+    return new Date() < this.expires_at && !this.revoked;
   }
 }
