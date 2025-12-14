@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Session } from 'src/common/entities/session.entity';
 import { User } from 'src/common/entities/user.entity';
@@ -106,5 +106,18 @@ export class SessionsService {
             },
             order: { created_at: 'DESC' },
         });
+    }
+
+    /**
+     * Get a session by its ID
+     * @param sessionId - The session ID
+     * @returns The session or null if not found
+     */
+    async getSessionById(sessionId: string): Promise<Session | null> {
+        const session = await this.sessionsRepository.findOne({
+            where: { id: sessionId },
+        });
+
+        return session || null;
     }
 }
