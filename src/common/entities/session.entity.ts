@@ -26,4 +26,8 @@ export class Session {
 
   @Column({ type: 'timestamp' })
   expires_at: Date;
+
+  is_valid(): boolean {
+    return new Date() < this.expires_at;
+  }
 }

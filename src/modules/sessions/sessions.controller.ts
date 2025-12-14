@@ -1,10 +1,14 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Request, UseGuards } from '@nestjs/common';
 import { SessionsService } from './sessions.service';
 import { Session } from 'src/common/entities/session.entity';
-import { ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { JwtGuard } from 'src/common/guards/jwt.guard';
+import { AUTH_NAME } from 'src/common/plugins/swagger.plugin';
 
 @Controller('sessions')
 @ApiTags('Sessions')
+@UseGuards(JwtGuard)
+@ApiBearerAuth(AUTH_NAME)
 export class SessionsController {
   constructor(private readonly sessionsService: SessionsService) {}
 
@@ -15,7 +19,8 @@ export class SessionsController {
    * @returns Array of active sessions
    */
   @Get()
-  async getUserSessions(@Query('userId') userId: string): Promise<Session[]> {
+  async getUserSessions(@Request() req): Promise<Session[]> {
+      const userId = req.session.userId;
       return this.sessionsService.getUserSessions(userId);
   }
 }

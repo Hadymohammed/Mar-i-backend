@@ -100,12 +100,10 @@ export class SessionsService {
      * @returns Array of active sessions
      */
     async getUserSessions(userId: string): Promise<Session[]> {
-        return this.sessionsRepository.find({
-            where: { 
-                user: { id: userId },
-            },
-            order: { created_at: 'DESC' },
+        const sessions = await this.sessionsRepository.find({
+            where: { user: { id: userId } },
         });
+        return sessions.filter(session => session.is_valid());
     }
 
     /**

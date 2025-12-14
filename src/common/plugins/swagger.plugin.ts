@@ -4,6 +4,8 @@ import { SwaggerTheme } from 'swagger-themes';
 import { SwaggerThemeNameEnum } from 'swagger-themes/build/enums/swagger-theme-name';
 import * as swaggerUi from 'swagger-ui-express';
 
+export const AUTH_NAME = "Mar'i";
+
 export function setupSwagger(app: INestApplication): void {
   if(!process.env.ENABLE_DOCS) return;
 
@@ -19,7 +21,7 @@ export function setupSwagger(app: INestApplication): void {
     .setVersion('1.0.0')
     .addBearerAuth(
       { type: 'http', scheme: 'bearer', bearerFormat: 'JWT', in: 'header' },
-      "Mar'i",
+      AUTH_NAME,
     )
     .build();
 
