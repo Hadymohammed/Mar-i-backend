@@ -54,7 +54,7 @@ export class SessionsService {
      * @param expiresIn - The expiration time in seconds
      * @returns The created session
      */
-    async createSession(request: Request, user: User, refreshToken: string, expiresIn: number): Promise<Session> {
+    async createSession(request: Request, user: User, refreshTokenId: string, expiresIn: number): Promise<Session> {
         const userAgent = request.headers['user-agent'] || 'unknown';
         const deviceName = this.extractDeviceName(userAgent);
         
@@ -62,15 +62,13 @@ export class SessionsService {
         const ipAddress = this.geolocationService.extractIpAddress(request);
         const location = await this.geolocationService.getLocationFromRequest(request);
 
-        // Hash the refresh token before storing
-        const refreshTokenHash = await bcrypt.hash(refreshToken, 10);
 
         // Calculate expiration date
         const expiresAt = new Date(Date.now() + expiresIn * 1000);
 
         const session = this.sessionsRepository.create({
             user,
-            refresh_token_hash: refreshTokenHash,
+            refresh_token_id: refreshTokenId,
             location,
             ip_address: ipAddress,
             device_name: deviceName,
@@ -80,15 +78,13 @@ export class SessionsService {
         return this.sessionsRepository.save(session);
     }
 
-    async updateSessionRefreshToken(sessionId: string, newRefreshToken: string, newExpiresIn: number): Promise<void> {
+    async updateSessionRefreshToken(sessionId: string, newRefreshTokenId: string, newExpiresIn: number): Promise<void> {
         const session = await this.sessionsRepository.findOne({ where: { id: sessionId } });
         if (!session) {
             throw new Error('Session not found');
         }
 
-        // Hash the new refresh token
-        const newRefreshTokenHash = await bcrypt.hash(newRefreshToken, 10);
-        session.refresh_token_hash = newRefreshTokenHash;
+        session.refresh_token_id = newRefreshTokenId;
         session.expires_at = new Date(Date.now() + newExpiresIn * 1000);
 
         await this.sessionsRepository.save(session);
@@ -101,7 +97,9 @@ export class SessionsService {
      */
     async getUserSessions(userId: string): Promise<Session[]> {
         const sessions = await this.sessionsRepository.find({
-            where: { user: { id: userId } },
+            where: { 
+                user_id: userId
+             },
         });
         return sessions.filter(session => session.is_valid());
     }

@@ -14,7 +14,7 @@ export class Session {
   user: User;
 
   @Column()
-  refresh_token_hash: string;
+  refresh_token_id: string;
 
   @Column({ nullable: true })
   location: string;
