@@ -1,12 +1,15 @@
-import { Body, Controller, Get, Post, Query, Req } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dtos/createUser.dto';
-import { ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VerifyOtpDto } from './dtos/verifyOtp.dto';
 import { OtpGeneratingResultDto } from './dtos/otpGeneratingResult.dto';
 import { LoginRequestDto } from './dtos/loginRequest.dto';
 import { Request } from 'express';
 import { AuthDataDto } from './dtos/authData.dto';
+import { JwtGuard } from 'src/common/guards/jwt.guard';
+import { AUTH_NAME } from 'src/common/plugins/swagger.plugin';
+import { IAuthRequest } from 'src/common/interfaces/IAuthRequest';
 
 @ApiTags('Authentication')
 @Controller('auth')
@@ -29,8 +32,8 @@ export class AuthController {
   
   @Post('otp/verify')
   @ApiResponse({ status: 200, description: 'OTP verified successfully.' })
-  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto): Promise<any> {
-    const data = await this.authService.verifyOtp(verifyOtpDto);
+  async verifyOtp(@Body() verifyOtpDto: VerifyOtpDto, @Req() request: Request): Promise<any> {
+    const data = await this.authService.verifyOtp(verifyOtpDto, request);
     return data;
   }
 
@@ -46,5 +49,16 @@ export class AuthController {
   async refreshToken(@Query('refreshToken') refreshToken: string): Promise<AuthDataDto> {
     const data = await this.authService.refreshToken(refreshToken);
     return data;
+  }
+
+  @Post('logout')
+  @ApiResponse({ status: 200, description: 'User logged out successfully.' })
+  @UseGuards(JwtGuard)
+  @ApiBearerAuth(AUTH_NAME)
+  async logout(@Req() request: IAuthRequest,@Query('allDevices') allDevices: boolean = false): Promise<void> {
+    await this.authService.logout(
+      request.session.userId, 
+      request.session.sessionId,
+      allDevices);
   }
 }

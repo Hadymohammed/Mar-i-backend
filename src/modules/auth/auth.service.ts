@@ -65,7 +65,7 @@ export class AuthService {
         return otp.availableResends
     }
 
-    async verifyOtp(verifyOtpDto: VerifyOtpDto) {
+    async verifyOtp(verifyOtpDto: VerifyOtpDto, request: Request): Promise<AuthDataDto | { resetPasswordToken: string, userId: string }> {
         const { email, otp } = verifyOtpDto;
         const isValid = await this.otpService.verifyOtp(email, otp);
 
@@ -75,15 +75,29 @@ export class AuthService {
 
         if(verifyOtpDto.verificationFlow == OtpFlow.REGISTRATION){
             const user = await this.usersService.updateUserEmailVerification(email);
-            // generate login tokens
-            return {
-                accessToken: 'access',
-                refreshToken: 'refresh',
+
+            const session = await this.sessionService
+            .createSession(request, user, "temp", 0); // temp token and 0 expiry for now
+
+            const tokens = await this.createTokens(user.id.toString(), user.email, session.id);
+
+            await this.sessionService.updateSessionRefreshToken(
+                session.id,
+                tokens.refreshToken.token,
+                tokens.refreshToken.expiresIn
+            );
+
+            const auth : AuthDataDto = {
+                accessToken: tokens.accessToken.token,
+                refreshToken: tokens.refreshToken.token,
+                refreshTokenExpiry: tokens.refreshTokenExpiry,
+                accessTokenExpiry: tokens.accessTokenExpiry,
                 email: user.email,
                 userId: user.id,
-                refreshTokenExpiry: new Date(Date.now() + 3600 * 1000), // 1 hour
-                accessTokenExpiry: new Date(Date.now() + 300 * 1000) // 5 minutes
-            }
+                sessionId: session.id
+            };
+
+            return auth;
         } else {
             // generate reset password token
             return {
@@ -118,7 +132,7 @@ export class AuthService {
 
         await this.sessionService.updateSessionRefreshToken(
             session.id,
-            tokens.refreshToken.token,
+            tokens.refreshToken.id,
             tokens.refreshToken.expiresIn
         );
         
@@ -150,18 +164,18 @@ export class AuthService {
             throw new UnauthorizedException('Session has expired');
         }
         
-        const tokens = await this.createTokens(payload.sub, payload.email, sessionId);
+        const tokens = await this.createTokens(payload.userId, payload.email, sessionId);
 
         await this.sessionService.updateSessionRefreshToken(
             sessionId,
-            tokens.refreshToken.token,
+            tokens.refreshToken.id,
             tokens.refreshToken.expiresIn
         );
 
         // block old refresh token
         // exp = 1766231820 (epoch time in seconds)
         const exp = payload.exp - Math.floor(Date.now() / 1000);
-        await this.jwtService.revokeRefreshToken(payload.jti, exp);
+        await this.jwtService.revokeRefreshTokenByJti(payload.jti, exp);
 
         
         return {
@@ -170,10 +184,19 @@ export class AuthService {
             refreshTokenExpiry: tokens.refreshTokenExpiry,
             accessTokenExpiry: tokens.accessTokenExpiry,
             email: payload.email,
-            userId: payload.sub,
+            userId: payload.userId,
             sessionId: sessionId
         };
     }
+
+    async logout(userId: string, sessionId: string, allDevices: boolean): Promise<void> {
+        if (allDevices) {
+           await this.sessionService.invalidateAllUserSessions(userId);
+        } else {
+            await this.sessionService.invalidateSession(sessionId, userId);
+        }
+    }
+
     private async createTokens(userId: string, email: string, sessionId: string) {
         const accessToken = await this.jwtService.createAccessToken(userId, email, sessionId);
         const refreshToken = await this.jwtService.createRefreshToken(userId, email, sessionId);

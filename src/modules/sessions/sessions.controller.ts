@@ -4,6 +4,7 @@ import { Session } from 'src/common/entities/session.entity';
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 import { JwtGuard } from 'src/common/guards/jwt.guard';
 import { AUTH_NAME } from 'src/common/plugins/swagger.plugin';
+import { IAuthRequest } from 'src/common/interfaces/IAuthRequest';
 
 @Controller('sessions')
 @ApiTags('Sessions')
@@ -19,7 +20,7 @@ export class SessionsController {
    * @returns Array of active sessions
    */
   @Get()
-  async getUserSessions(@Request() req): Promise<Session[]> {
+  async getUserSessions(@Request() req:IAuthRequest): Promise<Session[]> {
       const userId = req.session.userId;
       return this.sessionsService.getUserSessions(userId);
   }

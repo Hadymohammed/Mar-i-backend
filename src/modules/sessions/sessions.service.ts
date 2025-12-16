@@ -6,6 +6,9 @@ import { Repository } from 'typeorm';
 import { Request } from 'express';
 import * as bcrypt from 'bcrypt';
 import { GeolocationService } from 'src/common/services/geolocation/geolocation.service';
+import { JwtService } from 'src/common/services/jwt/jwt.service';
+import { RedisService } from 'src/common/services/redis.service';
+import { TokensBlacklistRedisKey } from 'src/common/consts/redisKeys';
 
 @Injectable()
 export class SessionsService {
@@ -13,6 +16,8 @@ export class SessionsService {
         @InjectRepository(Session)
         private sessionsRepository: Repository<Session>,
         private geolocationService: GeolocationService,
+        private jwtService: JwtService,
+        private redisService: RedisService,
     ) { }
 
     /**
@@ -115,5 +120,57 @@ export class SessionsService {
         });
 
         return session || null;
+    }
+
+    /**
+     * Invalidate session 
+     * @param sessionId - The session ID to invalidate
+     * @returns void
+     */
+    async invalidateSession(sessionId: string,userId: string): Promise<void> {
+        const session = await this.sessionsRepository.findOne({ where: 
+            { 
+                id: sessionId ,
+                user_id: userId
+            } 
+        });
+
+        if (!session) {
+            throw new NotFoundException('Session not found');
+        }
+
+        session.revoked = true;
+        await this.sessionsRepository.save(session);
+
+        const refreshExp = Math.floor(session.expires_at.getTime() / 1000 - Math.floor(Date.now() / 1000));
+
+        await this.jwtService.revokeRefreshTokenByJti(session.refresh_token_id, refreshExp);
+        await this.blockSession(session.id, refreshExp);
+    }
+
+    /**
+     * Invalidate all sessions for a user
+     * @param userId - The user ID whose sessions to invalidate
+     * @returns void
+     */
+    async invalidateAllUserSessions(userId: string): Promise<void> {
+        let sessions = await this.sessionsRepository.find({ where: { user_id: userId } });
+
+        sessions = sessions.filter(session => session.is_valid());
+
+        for (const session of sessions) {
+            session.revoked = true;
+            await this.sessionsRepository.save(session);
+
+            const exp = Math.floor(session.expires_at.getTime() / 1000 - Math.floor(Date.now() / 1000));
+
+            // block refresh token
+            await this.jwtService.revokeRefreshTokenByJti(session.refresh_token_id, exp);
+            await this.blockSession(session.id, exp);
+        }
+    }
+
+    private async blockSession(sessionId: string, expiresIn: number): Promise<void> {
+        await this.redisService.set(TokensBlacklistRedisKey.session(sessionId), 'revoked', expiresIn);
     }
 }

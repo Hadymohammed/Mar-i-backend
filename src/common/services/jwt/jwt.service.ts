@@ -60,9 +60,10 @@ export class JwtService {
    * @returns A signed JWT access token
    */
   async createAccessToken(userId: string, email: string, sessionId: string): Promise<IJwtGeneratingResult> {
+    const refreshTokenId = this.createJwtId();
     const payload = {
-      jti:  this.createJwtId(),
-      sub: userId,
+      jti:  refreshTokenId,
+      userId: userId,
       email,
       type: 'access',
       sessionId
@@ -79,6 +80,7 @@ export class JwtService {
             return reject(err);
             }
             resolve({
+                id: refreshTokenId,
                 token,
                 expiresIn: this._accessExpiresIn
             });
@@ -93,9 +95,10 @@ export class JwtService {
    * @returns A signed JWT refresh token
    */
   async createRefreshToken(userId: string, email: string, sessionId: string): Promise<IJwtGeneratingResult> {
+    const refreshTokenId = this.createJwtId();
     const payload = {
-        jti:  this.createJwtId(),
-        sub: userId,
+        jti:  refreshTokenId,
+        userId: userId,
         email,
         type: 'refresh',
         sessionId
@@ -109,6 +112,7 @@ export class JwtService {
             return reject(err);
             }
             resolve({
+                id: refreshTokenId,
                 token,
                 expiresIn: this._refreshExpiresIn
             });
@@ -138,7 +142,10 @@ export class JwtService {
         
         const redisKey = type === 'access' ? TokensBlacklistRedisKey.accessToken(jti) : TokensBlacklistRedisKey.refreshToken(jti);
         const isRevoked = await this.redisService.get(redisKey);
-        return isRevoked ? null : payload;
+
+        const isSessionRevoked  = await this.redisService.get(TokensBlacklistRedisKey.session(payload.sessionId))
+
+        return isRevoked && isSessionRevoked ? null : payload;
       } catch (error) {
         return null;
       }
@@ -149,16 +156,34 @@ export class JwtService {
      * @param jti - The JWT ID of the token to revoke
      * @param expiresIn - Expiration time in seconds
      */
-    async revokeRefreshToken(jti: string, expiresIn: number): Promise<void> {
+    async revokeRefreshTokenByJti(jti: string, expiresIn: number): Promise<void> {
         await this.redisService.set(TokensBlacklistRedisKey.refreshToken(jti), 'revoked', expiresIn);
     }
 
+    async revokeRefreshToken(token: string): Promise<void> {
+        const payload = this.decodeToken(token, 'refresh');
+        const jti = payload.jti;
+        const exp = payload.exp - Math.floor(Date.now() / 1000);
+        await this.revokeRefreshTokenByJti(jti, exp);
+    }
     /**
      * Revoke an access token by storing its jti in Redis with expiration
      * @param jti - The JWT ID of the token to revoke
      * @param expiresIn - Expiration time in seconds
      */
-    async revokeAccessToken(jti: string, expiresIn: number): Promise<void> {
+    async revokeAccessTokenByJti(jti: string, expiresIn: number): Promise<void> {
         await this.redisService.set(TokensBlacklistRedisKey.accessToken(jti), 'revoked', expiresIn);
+    }
+
+    /**
+     * Revoke an access token
+     * @param token - The JWT access token to revoke
+     * @returns void
+     */
+    async revokeAccessToken(token: string): Promise<void> {
+        const payload = this.decodeToken(token, 'access');
+        const jti = payload.jti;
+        const exp = payload.exp - Math.floor(Date.now() / 1000);
+        await this.revokeAccessTokenByJti(jti, exp);
     }
 }
